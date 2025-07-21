@@ -1,0 +1,32 @@
+services:
+  # ---- PostgreSQL Database with pgvector ----
+  db:
+    image: ankane/pgvector:latest # Using the latest stable pgvector image
+    container_name: cinemax-db
+    environment:
+      POSTGRES_DB: cinemax_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      # Volume for data persistence. Ensures your data survives container restarts.
+      - ./postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ---- Python Pipeline Runner Service ----
+  pipeline:
+    container_name: cinemax-pipeline
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    # This service should not start until the 'db' service is up and running.
+    depends_on:
+      - db
+    volumes:
+      # Mount the current directory into the container's /app directory.
+      # This allows you to edit your Python scripts locally and run them
+      # inside the container without rebuilding the image.
+      - ./:/app
+    # This command keeps the container running in the background but idle,
+    # so we can execute our scripts on demand.
+    command: ["sleep", "infinity"]
